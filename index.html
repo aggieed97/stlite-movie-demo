@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <title>stlite app</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.26.0/build/stlite.css"
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.26.0/build/stlite.js"></script>
+    <script>
+stlite.mount(
+  {
+    requirements: ["matplotlib", "plotly.express", "pandas"], // Packages to install
+    entrypoint: "streamlit_app.py", // The target file of the `streamlit run` command
+    files: {
+      "streamlit_app.py": `
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+import importlib
+import requests
+from io import StringIO
+
+if importlib.util.find_spec("pyodide") is not None:
+    from pyodide.http import open_url
+
+@st.cache_data(show_spinner=False)
+def read_url(url:str, **kwargs):
+    """Read the CSV content from a URL"""
+
+    # If pyodide is available
+    if importlib.util.find_spec("pyodide") is not None:
+        url_contents = open_url(url)
+    else:
+        r = requests.get(url)
+        url_contents = StringIO(r.text)
+
+    return pd.read_csv(
+        url_contents,
+        **kwargs
+    )
+
+st.set_page_config(page_title="2023 Movies")
+
+url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkpF4DO8orXrx94k9Hl9q8kF-lQbKXENLQL0xAoo_ap9OOUl0utwd7MeJn-0aGJBzQ--xdKVSvxe5z/pub?gid=505644229&single=true&output=csv"
+
+df = read_url(url)
+df[['Release_Date', 'Date_Seen']] = df[['Release_Date', 'Date_Seen']].apply(pd.to_datetime)
+
+time_spent_in_movies = df.Length.sum()
+hours_spent = round(time_spent_in_movies/60, 2)
+movie_count_total = df.shape[0]
+movie_count_no_duplicates = df.drop_duplicates(subset = ['Movie']).shape[0]
+duplicates = movie_count_total - movie_count_no_duplicates
+
+st.title("Movies in 2023")
+st.write(f"In 2023, I've seen {movie_count_total} movies in a theater spending {time_spent_in_movies} minutes or {hours_spent} hours!")
+st.write(f"I've seen {duplicates} movies more than once!")
+
+# Genre Distribution
+
+fig1 = px.histogram(
+    data_frame=df,
+    x="Genre",
+    color="Month",
+    color_discrete_sequence=px.colors.sequential.RdBu
+).update_xaxes(
+    categoryorder='total descending'
+).update_layout(
+    title={
+        'text': 'Genre Distribution in 2023',
+        'y': 0.9,
+        'x': 0.5,
+        'xanchor': 'center',
+        'yanchor': 'top'
+    },
+    yaxis_title="# of Movies",
+    font=dict(
+        size=40
+    )
+).add_annotation(
+    dict(font=dict(color='white', size=15),
+         x=0.8,
+         y=-0.2,
+         showarrow=False,
+         text="Graphic: @Danger009Mouse",
+         textangle=0,
+         xanchor='left',
+         xref="paper",
+         yref="paper")
+         )
+
+# Theater Distribution
+
+fig2 = px.histogram(
+    data_frame=df,
+    x="Theater_Chain",
+    color="Month",
+    color_discrete_sequence=px.colors.sequential.RdBu
+).update_layout(
+    title={
+        'text': 'Theater Chain Distribution in 2023',
+        'y': 0.9,
+        'x': 0.5,
+        'xanchor': 'center',
+        'yanchor': 'top'
+    },
+    yaxis_title="# of Movies",
+    xaxis_title="Theater Chain",
+    font=dict(
+        size=20
+    )
+).add_annotation(
+    dict(font=dict(color='white', size=15),
+         x=0.8,
+         y=-0.2,
+         showarrow=False,
+         text="Graphic: @Danger009Mouse",
+         textangle=0,
+         xanchor='left',
+         xref="paper",
+         yref="paper")
+         )
+
+# Release Designation
+
+fig3 = px.histogram(
+    data_frame=df,
+    x="New_or_Re-Release",
+    color="Month",
+    color_discrete_sequence=px.colors.sequential.RdBu
+).update_layout(
+    title={
+        'text': 'Release Designation in 2023',
+        'y': 0.9,
+        'x': 0.5,
+        'xanchor': 'center',
+        'yanchor': 'top'
+    },
+    yaxis_title="# of Movies",
+    xaxis_title="Release Designation",
+    font=dict(
+        size=20
+    )
+).add_annotation(
+    dict(font=dict(color='white', size=15),
+         x=0.8,
+         y=-0.2,
+         showarrow=False,
+         text="Graphic: @Danger009Mouse",
+         textangle=0,
+         xanchor='left',
+         xref="paper",
+         yref="paper")
+         )
+
+fig4 = px.histogram(
+    data_frame=df,
+    x="Month",
+    color="Month",
+    color_discrete_sequence=px.colors.sequential.RdBu
+).update_layout(
+    title={
+        'text': 'Movie Count by Month in 2023',
+        'y': 0.9,
+        'x': 0.5,
+        'xanchor': 'center',
+        'yanchor': 'top'
+    },
+    yaxis_title="# of Movies",
+    font=dict(
+        size=20
+    ),
+    showlegend=False
+).add_annotation(
+    dict(font=dict(color='white', size=15),
+         x=0.7,
+         y=-0.2,
+         showarrow=False,
+         text="Graphic: @Danger009Mouse",
+         textangle=0,
+         xanchor='left',
+         xref="paper",
+         yref="paper")
+         )
+
+st.plotly_chart(fig1, use_container_width=True)
+st.plotly_chart(fig2, use_container_width=True)
+st.plotly_chart(fig3, use_container_width=True)
+st.plotly_chart(fig4, use_container_width=True)
+`,
+    },
+  },
+  document.getElementById("root")
+);
+    </script>
+  </body>
+</html>
