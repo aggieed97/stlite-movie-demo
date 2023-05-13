@@ -60,6 +60,7 @@ df[['Release_Date', 'Date_Seen']] = df[['Release_Date', 'Date_Seen']].apply(pd.t
 time_spent_in_movies = df.Length.sum()
 hours_spent = round(time_spent_in_movies/60, 2)
 movie_count_total = df.shape[0]
+st.write(movie_count_total)
 duplicates = len(set((df[df.duplicated(subset=['Movie'])].Movie.to_list())))
 
 st.title("Movies in 2023")
