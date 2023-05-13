@@ -56,6 +56,7 @@ url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkpF4DO8orXrx94k9Hl9q8kF
 df = read_url(url)
 df[['Release_Date', 'Date_Seen']] = df[['Release_Date', 'Date_Seen']].apply(pd.to_datetime)
 
+# Movie Calculations
 time_spent_in_movies = df.Length.sum()
 hours_spent = round(time_spent_in_movies/60, 2)
 movie_count_total = df.shape[0]
