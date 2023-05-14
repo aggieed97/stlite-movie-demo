@@ -67,6 +67,17 @@ st.title("Movies in 2023")
 st.write(f"In 2023, I've seen {movie_count_total} movies spending {time_spent_in_movies} minutes or {hours_spent} hours in a theater!")
 st.write(f"I've seen {duplicates} movies more than once!")
 
+option = st.selectbox(
+  'Which tag would you like to add to the visualizations?',
+  ['Twitter', 'Facebook/LinkedIn']
+)
+
+if option == 'Twitter':
+  viz_tag = 'Graphic: @danger009mouse'
+else:
+  viz_tag = 'Graphic: Ed Salinas'
+
+
 # Genre Distribution
 
 fig1 = px.histogram(
@@ -93,7 +104,7 @@ fig1 = px.histogram(
          x=0.8,
          y=-0.2,
          showarrow=False,
-         text="Graphic: @Danger009Mouse",
+         text=viz_tag,
          textangle=0,
          xanchor='left',
          xref="paper",
@@ -125,7 +136,7 @@ fig2 = px.histogram(
          x=0.8,
          y=-0.2,
          showarrow=False,
-         text="Graphic: @Danger009Mouse",
+         text=viz_tag,
          textangle=0,
          xanchor='left',
          xref="paper",
@@ -157,7 +168,7 @@ fig3 = px.histogram(
          x=0.8,
          y=-0.2,
          showarrow=False,
-         text="Graphic: @Danger009Mouse",
+         text=viz_tag,
          textangle=0,
          xanchor='left',
          xref="paper",
@@ -187,7 +198,39 @@ fig4 = px.histogram(
          x=0.7,
          y=-0.2,
          showarrow=False,
-         text="Graphic: @Danger009Mouse",
+         text=viz_tag,
+         textangle=0,
+         xanchor='left',
+         xref="paper",
+         yref="paper")
+         )
+
+location_df = df[df.Location.str.contains("Alamo Drafthouse")]
+
+fig5 = px.histogram(
+    data_frame=location_df,
+    x="Location",
+    color="Genre",
+    color_discrete_sequence=px.colors.sequential.RdBu
+).update_layout(
+    title={
+        'text': 'Genre Distribution by Alamo Drafthouse Location in 2023',
+        'y': 0.9,
+        'x': 0.5,
+        'xanchor': 'center',
+        'yanchor': 'top'
+    },
+    yaxis_title="# of Movies",
+    xaxis_title="Theater Location",
+    font=dict(
+        size=20
+    )
+).add_annotation(
+    dict(font=dict(color='white', size=15),
+         x=0.8,
+         y=-0.5,
+         showarrow=False,
+         text=viz_tag,
          textangle=0,
          xanchor='left',
          xref="paper",
@@ -198,6 +241,7 @@ st.plotly_chart(fig1, use_container_width=True)
 st.plotly_chart(fig2, use_container_width=True)
 st.plotly_chart(fig3, use_container_width=True)
 st.plotly_chart(fig4, use_container_width=True)
+st.plotly_chart(fig5, use_container_width=True)
 `,
     },
   },
