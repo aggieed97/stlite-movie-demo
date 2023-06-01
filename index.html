@@ -212,6 +212,8 @@ fig5 = px.histogram(
     x="Location",
     color="Genre",
     color_discrete_sequence=px.colors.sequential.RdBu
+).update_xaxes(
+    categoryorder='total descending'
 ).update_layout(
     title={
         'text': 'Genre Distribution by Alamo Drafthouse Location in 2023',
