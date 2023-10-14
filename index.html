@@ -118,6 +118,8 @@ fig2 = px.histogram(
     x="Theater_Chain",
     color="Month",
     color_discrete_sequence=px.colors.sequential.RdBu
+).update_xaxes(
+    categoryorder='total descending'
 ).update_layout(
     title={
         'text': 'Theater Chain Distribution in 2023',
@@ -239,11 +241,114 @@ fig5 = px.histogram(
          yref="paper")
          )
 
+# Group the data by location and count the number of movies seen at each location
+location_counts = location_df['Location'].value_counts().reset_index()
+location_counts.columns = ['Location', 'Count']
+
+# Create the heatmap using Plotly Express
+fig6 = px.density_heatmap(
+    location_counts,
+    x='Location',
+    y='Count',
+    color_continuous_scale=px.colors.sequential.RdBu
+).update_layout(
+    title={
+        'text': 'Frequency of Movies Seen at Different Locations',
+        'y': 0.9,
+        'x': 0.5,
+        'xanchor': 'center',
+        'yanchor': 'top'
+    },
+    yaxis_title="Count",
+    xaxis_title="Theater Location",
+    font=dict(
+        size=20
+    )
+).add_annotation(
+    dict(font=dict(color='white', size=15),
+         x=0.8,
+         y=-0.5,
+         showarrow=False,
+         text=viz_tag,
+         textangle=0,
+         xanchor='left',
+         xref="paper",
+         yref="paper")
+         )
+
+release_counts = df['New_or_Re-Release'].value_counts().reset_index()
+release_counts.columns = ['New_or_Re-Release', 'Count']
+
+fig7 = px.pie(
+    data_frame=release_counts,
+    values="Count",
+    names="New_or_Re-Release",
+    color_discrete_sequence=px.colors.sequential.RdBu
+).update_traces(
+    textposition='inside',
+    textinfo='percent+label'
+).update_layout(
+    title={
+        'text': 'Proportion of New and Re-Release Designation in 2023',
+        'y': 0.9,
+        'x': 0.5,
+        'xanchor': 'center',
+        'yanchor': 'top'
+    },
+    #yaxis_title="# of Movies",
+    #xaxis_title="Theater Location",
+    font=dict(
+        size=10
+    )
+).add_annotation(
+    dict(font=dict(color='white', size=15),
+         x=0.8,
+         y=-0.2,
+         showarrow=False,
+         text=viz_tag,
+         textangle=0,
+         xanchor='left',
+         xref="paper",
+         yref="paper")
+         )
+
+# Group the data by genre and count the number of movies in each genre
+genre_counts = df['Genre'].value_counts().reset_index()
+genre_counts.columns = ['Genre', 'Count']
+
+fig8 = px.treemap(
+    genre_counts,
+    path=['Genre'],
+    values='Count',
+    title='Movie Distribution by Genre',
+    color_continuous_scale=px.colors.sequential.RdBu,
+    custom_data=["Genre"]
+).update_traces(
+  marker=dict(cornerradius=5),
+  textinfo="label+percent entry + value"
+  ).add_annotation(
+    dict(font=dict(color='white', size=15),
+         x=0.7,
+         y=-0.2,
+         showarrow=False,
+         text=viz_tag,
+         textangle=0,
+         xanchor='left',
+         xref="paper",
+         yref="paper")
+         )
+
+
+
+
 st.plotly_chart(fig1, use_container_width=True)
 st.plotly_chart(fig2, use_container_width=True)
 st.plotly_chart(fig3, use_container_width=True)
 st.plotly_chart(fig4, use_container_width=True)
 st.plotly_chart(fig5, use_container_width=True)
+st.plotly_chart(fig6, use_container_width=True)
+st.plotly_chart(fig7, use_container_width=True)
+st.plotly_chart(fig8, use_container_width=True)
 `,
     },
   },
