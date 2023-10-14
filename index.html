@@ -310,7 +310,7 @@ fig7 = px.pie(
          xanchor='left',
          xref="paper",
          yref="paper")
-         )
+)
 
 # Group the data by genre and count the number of movies in each genre
 genre_counts = df['Genre'].value_counts().reset_index()
@@ -320,12 +320,20 @@ fig8 = px.treemap(
     genre_counts,
     path=['Genre'],
     values='Count',
-    title='Movie Distribution by Genre',
+    #title='Movie Distribution by Genre',
     color_continuous_scale=px.colors.sequential.RdBu,
     custom_data=["Genre"]
 ).update_traces(
   marker=dict(cornerradius=5),
   textinfo="label+percent entry + value"
+  ).update_layout(
+    title={
+        'text': 'Movie Distribution by Genre',
+        'y': 0.9,
+        'x': 0.5,
+        'xanchor': 'center',
+        'yanchor': 'top'
+    }
   ).add_annotation(
     dict(font=dict(color='white', size=15),
          x=0.7,
@@ -336,7 +344,7 @@ fig8 = px.treemap(
          xanchor='left',
          xref="paper",
          yref="paper")
-         )
+  )
 
 
 
