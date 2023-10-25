@@ -10,12 +10,12 @@
     <title>stlite app</title>
     <link
       rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.31.0/build/stlite.css"
+      href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.39.0/build/stlite.css"
     />
   </head>
   <body>
     <div id="root"></div>
-    <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.31.0/build/stlite.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.39.0/build/stlite.js"></script>
     <script>
 stlite.mount(
   {
@@ -59,23 +59,35 @@ df[['Release_Date', 'Date_Seen']] = df[['Release_Date', 'Date_Seen']].apply(pd.t
 # Movie Calculations
 time_spent_in_movies = df.Length.sum()
 hours_spent = round(time_spent_in_movies/60, 2)
+days_spent = round(hours_spent/24, 2)
 movie_count_total = df.shape[0]
 #st.write(movie_count_total)
 duplicates = len(set((df[df.duplicated(subset=['Movie'])].Movie.to_list())))
 
 st.title("Movies in 2023")
-st.write(f"In 2023, I've seen {movie_count_total} movies spending {time_spent_in_movies} minutes or {hours_spent} hours in a theater!")
+st.write(f"In 2023, I've seen {movie_count_total} movies spending {time_spent_in_movies} minutes. That is {hours_spent} hours or {days_spent} days in a theater!")
 st.write(f"I've seen {duplicates} movies more than once!")
+
+# Group the DataFrame by 'title' and count the occurrences
+movie_counts = df.groupby('Movie').size().reset_index(name='Times Seen in a Theater')
+
+# Filter the results where count is greater than 1
+movie_count_df = movie_counts[movie_counts['Times Seen in a Theater'] > 1].sort_values(by="Times Seen in a Theater", ascending=False)
+
+# Display the styled DataFrame in Streamlit
+st.dataframe(movie_count_df.style.background_gradient(cmap='Blues'), hide_index=True, height=600)
 
 option = st.selectbox(
   'Which tag would you like to add to the visualizations?',
-  ['Twitter', 'Facebook/LinkedIn']
+  ['Twitter', 'Facebook/LinkedIn', 'Bluesky']
 )
 
 if option == 'Twitter':
   viz_tag = 'Graphic: @danger009mouse'
-else:
+elif option == 'Facebook':
   viz_tag = 'Graphic: Ed Salinas'
+else:
+  viz_tag = 'Graphic: dangermouse'
 
 
 # Genre Distribution
