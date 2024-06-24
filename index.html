@@ -49,7 +49,7 @@ def read_url(url:str, **kwargs):
         **kwargs
     )
 
-st.set_page_config(page_title="2023 Movies")
+st.set_page_config(page_title="Ed's Movies")
 
 url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkpF4DO8orXrx94k9Hl9q8kF-lQbKXENLQL0xAoo_ap9OOUl0utwd7MeJn-0aGJBzQ--xdKVSvxe5z/pub?gid=505644229&single=true&output=csv"
 
@@ -113,7 +113,7 @@ fig1 = px.histogram(
     categoryorder='total descending'
 ).update_layout(
     title={
-        'text': 'Genre Distribution in 2023',
+        'text': f'Genre Distribution in {year_option}',
         'y': 0.9,
         'x': 0.5,
         'xanchor': 'center',
@@ -146,7 +146,7 @@ fig2 = px.histogram(
     categoryorder='total descending'
 ).update_layout(
     title={
-        'text': 'Theater Chain Distribution in 2023',
+        'text': f'Theater Chain Distribution in {year_option}',
         'y': 0.9,
         'x': 0.5,
         'xanchor': 'center',
@@ -178,7 +178,7 @@ fig3 = px.histogram(
     color_discrete_sequence=px.colors.sequential.RdBu
 ).update_layout(
     title={
-        'text': 'Release Designation in 2023',
+        'text': f'Release Designation in {year_option}',
         'y': 0.9,
         'x': 0.5,
         'xanchor': 'center',
@@ -208,7 +208,7 @@ fig4 = px.histogram(
     color_discrete_sequence=px.colors.sequential.RdBu
 ).update_layout(
     title={
-        'text': 'Movie Count by Month in 2023',
+        'text': f'Movie Count by Month in {year_option}',
         'y': 0.9,
         'x': 0.5,
         'xanchor': 'center',
@@ -242,7 +242,7 @@ fig5 = px.histogram(
     categoryorder='total descending'
 ).update_layout(
     title={
-        'text': 'Genre Distribution by Alamo Drafthouse Location in 2023',
+        'text': f'Genre Distribution by Alamo Drafthouse Location in {year_option}',
         'y': 0.9,
         'x': 0.5,
         'xanchor': 'center',
@@ -313,7 +313,7 @@ fig7 = px.pie(
     textinfo='percent+label'
 ).update_layout(
     title={
-        'text': 'Proportion of New and Re-Release Designation in 2023',
+        'text': f'Proportion of New and Re-Release Designation in {year_option}',
         'y': 0.9,
         'x': 0.5,
         'xanchor': 'center',
