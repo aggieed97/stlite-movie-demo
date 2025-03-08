@@ -10,16 +10,16 @@
     <title>stlite app</title>
     <link
       rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.76.0/build/stlite.css"
+      href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.76.0/build/style.css"
     />
   </head>
   <body>
     <div id="root"></div>
-    <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.76.0/build/stlite.js"></script>
-    <script>
-stlite.mount(
-  {
-    requirements: ["matplotlib", "plotly.express", "pandas"], // Packages to install
+    <script type="module">
+      import { mount } from "https://cdn.jsdelivr.net/npm/@stlite/browser@0.76.0/build/stlite.js";
+      mount(
+      {
+    requirements: ["matplotlib", "plotly.express", "pandas", "requests"], // Packages to install
     entrypoint: "streamlit_app.py", // The target file of the `streamlit run` command
     files: {
       "streamlit_app.py": `
@@ -54,7 +54,7 @@ st.set_page_config(page_title="Ed's Movies")
 url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkpF4DO8orXrx94k9Hl9q8kF-lQbKXENLQL0xAoo_ap9OOUl0utwd7MeJn-0aGJBzQ--xdKVSvxe5z/pub?gid=505644229&single=true&output=csv"
 
 df = read_url(url)
-df[['Release_Date', 'Date_Seen']] = df[['Release_Date', 'Date_Seen']].apply(pd.to_datetime)
+df[['Release_Date', 'Date_Seen']] = df[['Release_Date', 'Date_Seen']].apply(pd.to_datetime, errors='coerce', format='mixed')
 
 year = list(df.Year.unique())
 year.sort(reverse=True)
@@ -87,7 +87,7 @@ movie_counts = df.groupby('Movie').size().reset_index(name='Times Seen in a Thea
 movie_count_df = movie_counts[movie_counts['Times Seen in a Theater'] > 1].sort_values(by="Times Seen in a Theater", ascending=False)
 
 # Display the styled DataFrame in Streamlit
-st.dataframe(movie_count_df.style.background_gradient(cmap='Blues'), hide_index=True, height=600)
+#st.dataframe(movie_count_df, use_container_width=True, hide_index=True, height=600)
 
 option = st.selectbox(
   'Which tag would you like to add to the visualizations?',
