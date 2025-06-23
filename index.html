@@ -364,6 +364,75 @@ if not df_filtered.empty:
 
 else:
     st.warning("Please select at least one year to display visualizations.")
+
+st.header("Genre Deep Dives")
+
+# Check if there is data to plot after filtering
+if not df_filtered.empty:
+    # --- 1. Create Two Columns for the Layout ---
+    col1, col2 = st.columns(2)
+
+    # --- 2. Build and Display the Heatmap in Column 1 ---
+    with col1:
+        st.subheader("Genre Affinity by Top Theaters")
+        # --- Data Prep for Heatmap ---
+        chains_to_include = ['Alamo Drafthouse', 'AMC', 'Cinemark', 'Regal Cinemas']
+        heatmap_df = df_filtered[df_filtered['Theater_Chain'].isin(chains_to_include)]
+        affinity_counts = heatmap_df.groupby(['Genre', 'Theater_Chain']).size().reset_index(name='Count')
+        heatmap_title = f"Genre Affinity in {', '.join(map(str, sorted(year_options)))}"
+
+        # --- Create Heatmap ---
+        fig_heatmap = px.density_heatmap(
+            affinity_counts, x='Genre', y='Theater_Chain', z='Count',
+            color_continuous_scale='RdBu', text_auto=True
+        )
+        # --- Style Heatmap ---
+        fig_heatmap.update_xaxes(tickangle=-45)
+        fig_heatmap.update_layout(
+            title={'text': heatmap_title, 'y': 0.95, 'x': 0.5, 'xanchor': 'center', 'yanchor': 'top'},
+            font=dict(size=14, color="white"),
+            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+            xaxis_title="Genre", yaxis_title="Theater Chain",
+            coloraxis_colorbar_title_text='Count'
+        ).add_annotation(
+            dict(font=dict(color='white', size=15), x=1.0, y=-0.3, showarrow=False,
+                 text=viz_tag, textangle=0, xanchor='right', xref="paper", yref="paper")
+        )
+        st.plotly_chart(fig_heatmap, use_container_width=True, key="affinity_heatmap_filtered")
+
+
+    # --- 3. Build and Display the Box Plot in Column 2 ---
+    with col2:
+        st.subheader("Distribution of Runtimes by Genre of Movies Watched")
+        # --- Data Prep for Box Plot (to order genres by median runtime) ---
+        genre_order_by_length = df_filtered.groupby('Genre')['Length'].median().sort_values(ascending=False).index
+        boxplot_title = f"Runtime Distribution in {', '.join(map(str, sorted(year_options)))}"
+
+        # --- Create Box Plot ---
+        fig_box = px.box(
+            df_filtered,
+            x='Genre',
+            y='Length',
+            color='Genre', # Optional: adds color to each box
+            category_orders={'Genre': genre_order_by_length}, # This sorts the x-axis
+            color_discrete_sequence=px.colors.sequential.Sunsetdark
+        )
+        # --- Style Box Plot ---
+        fig_box.update_xaxes(tickangle=-45)
+        fig_box.update_layout(
+            title={'text': boxplot_title, 'y': 0.95, 'x': 0.5, 'xanchor': 'center', 'yanchor': 'top'},
+            font=dict(size=14, color="white"),
+            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
+            xaxis_title="Genre", yaxis_title="Runtime (Minutes)",
+            showlegend=False # Hide legend since x-axis and colors are redundant
+        ).add_annotation(
+            dict(font=dict(color='white', size=15), x=1.0, y=-0.3, showarrow=False,
+                 text=viz_tag, textangle=0, xanchor='right', xref="paper", yref="paper")
+        )
+        st.plotly_chart(fig_box, use_container_width=True, key="runtime_boxplot")
+
+else:
+    st.warning("Please select at least one year to display visualizations.")
 `,
     },
     streamlitConfig: {
