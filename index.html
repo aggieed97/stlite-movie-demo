@@ -294,6 +294,76 @@ if not df_filtered.empty:
 else:
     st.warning("Please select at least one year to display visualizations.")
 
+st.header("Release Type and Distributor Analysis")
+
+# Check if there is data to plot after filtering
+if not df_filtered.empty:
+    # --- 1. Prepare Data for BOTH Charts ---
+
+    # Data for New vs. Re-Release Donut Chart
+    release_counts = df_filtered['New_or_Re-Release'].value_counts().reset_index()
+    release_counts.columns = ['Category', 'Count']
+
+    # Data for Distributor Treemap
+    distributor_counts = df_filtered['Distributor'].value_counts().reset_index()
+    distributor_counts.columns = ['Distributor', 'Count']
+
+    # --- 2. Create Two Columns for the Layout ---
+    col1, col2 = st.columns(2)
+
+
+    # --- 3. Build and Display the Donut Chart in Column 1 ---
+    with col1:
+        st.subheader("By Release Type")
+        donut_title = f"New vs. Re-Release in {', '.join(map(str, sorted(year_options)))}"
+
+        # Use px.pie and the 'hole' parameter to create a donut chart
+        fig_donut = px.pie(
+            release_counts,
+            names='Category',
+            values='Count',
+            hole=0.4, # This creates the donut shape
+            color_discrete_sequence=px.colors.sequential.RdBu
+        )
+        fig_donut.update_traces(textinfo='percent+label', textfont_size=16)
+        fig_donut.update_layout(
+            title={'text': donut_title, 'y':0.9, 'x':0.5, 'xanchor': 'center', 'yanchor': 'top'},
+            font=dict(size=16, color="white"),
+            showlegend=False, # Hide legend as labels are on the chart
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)'
+        ).add_annotation(
+            dict(font=dict(color='white', size=15), x=1.0, y=-0.1, showarrow=False,
+                 text=viz_tag, textangle=0, xanchor='right', xref="paper", yref="paper")
+        )
+        st.plotly_chart(fig_donut, use_container_width=True, key="release_donut")
+
+    # --- 4. Build and Display the Distributor Treemap in Column 2 ---
+    with col2:
+        st.subheader("By Distributor")
+        dist_title = f"Distributor Breakdown in {', '.join(map(str, sorted(year_options)))}"
+
+        fig_dist_treemap = px.treemap(
+            distributor_counts,
+            path=[px.Constant("All Distributors"), 'Distributor'],
+            values='Count',
+            color='Distributor',
+            color_discrete_sequence=px.colors.sequential.Sunsetdark
+        )
+        fig_dist_treemap.update_traces(textinfo="label+value+percent root")
+        fig_dist_treemap.update_layout(
+            title={'text': dist_title, 'y':0.9, 'x':0.5, 'xanchor': 'center', 'yanchor': 'top'},
+            font=dict(size=16, color="white"),
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)'
+        ).add_annotation(
+            dict(font=dict(color='white', size=15), x=1.0, y=-0.1, showarrow=False,
+                 text=viz_tag, textangle=0, xanchor='right', xref="paper", yref="paper")
+        )
+        st.plotly_chart(fig_dist_treemap, use_container_width=True, key="distributor_treemap")
+
+else:
+    st.warning("Please select at least one year to display visualizations.")
 `,
     },
     streamlitConfig: {
