@@ -219,6 +219,75 @@ if not df_filtered.empty:
 else:
     st.warning("Please select at least one year to display the chart.")
 
+st.header("Content and Location Breakdowns")
+
+# Check if there is data to plot after filtering
+if not df_filtered.empty:
+    # --- 1. Prepare Data for BOTH Treemaps First ---
+
+    # Data for Genre Treemap
+    genre_counts = df_filtered['Genre'].value_counts().reset_index()
+    genre_counts.columns = ['Genre', 'Count']
+
+    # Data for Theater Chain Treemap
+    theater_counts = df_filtered['Theater_Chain'].value_counts().reset_index()
+    theater_counts.columns = ['Theater_Chain', 'Count']
+
+    # --- 2. Create Two Columns for the Layout ---
+    col1, col2 = st.columns(2)
+
+
+    # --- 3. Build and Display the First Treemap in Column 1 ---
+    with col1:
+        st.subheader("By Genre")
+        genre_title = f"Genre Breakdown in {', '.join(map(str, sorted(year_options)))}"
+
+        fig_genre_treemap = px.treemap(
+            genre_counts,
+            path=[px.Constant("All Genres"), 'Genre'],
+            values='Count',
+            color='Genre',
+            color_discrete_sequence=px.colors.sequential.RdBu
+        )
+        fig_genre_treemap.update_traces(textinfo="label+value+percent root")
+        fig_genre_treemap.update_layout(
+            title={'text': genre_title, 'y':0.9, 'x':0.5, 'xanchor': 'center', 'yanchor': 'top'},
+            font=dict(size=16, color="white"),
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)'
+        ).add_annotation(
+            dict(font=dict(color='white', size=15), x=1.0, y=-0.1, showarrow=False,
+                 text=viz_tag, textangle=0, xanchor='right', xref="paper", yref="paper")
+        )
+        st.plotly_chart(fig_genre_treemap, use_container_width=True, key="genre_treemap")
+
+    # --- 4. Build and Display the Second Treemap in Column 2 ---
+    with col2:
+        st.subheader("By Theater Chain")
+        theater_title = f"Theater Chain Breakdown in {', '.join(map(str, sorted(year_options)))}"
+
+        fig_theater_treemap = px.treemap(
+            theater_counts,
+            path=[px.Constant("All Theaters"), 'Theater_Chain'],
+            values='Count',
+            color='Theater_Chain',
+            color_discrete_sequence=px.colors.sequential.thermal
+        )
+        fig_theater_treemap.update_traces(textinfo="label+value+percent root")
+        fig_theater_treemap.update_layout(
+            title={'text': theater_title, 'y':0.9, 'x':0.5, 'xanchor': 'center', 'yanchor': 'top'},
+            font=dict(size=16, color="white"),
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)'
+        ).add_annotation(
+            dict(font=dict(color='white', size=15), x=1.0, y=-0.1, showarrow=False,
+                 text=viz_tag, textangle=0, xanchor='right', xref="paper", yref="paper")
+        )
+        st.plotly_chart(fig_theater_treemap, use_container_width=True, key="theater_treemap")
+
+else:
+    st.warning("Please select at least one year to display visualizations.")
+
 `,
     },
     streamlitConfig: {
