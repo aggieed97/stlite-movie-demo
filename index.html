@@ -50,7 +50,7 @@ def read_url(url:str, **kwargs):
         **kwargs
     )
 
-st.set_page_config(page_title="Ed's Movies")
+st.set_page_config(page_title="Ed's Movies", layout="wide")
 
 url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkpF4DO8orXrx94k9Hl9q8kF-lQbKXENLQL0xAoo_ap9OOUl0utwd7MeJn-0aGJBzQ--xdKVSvxe5z/pub?gid=505644229&single=true&output=csv"
 
@@ -148,24 +148,21 @@ elif option == 'Facebook/LinkedIn':
 else:
   viz_tag = 'Graphic: dangermouse'
 
-# Create a more descriptive title
-title_text = f"Movie Count by Month in {', '.join(map(str, sorted(year_options)))}"
-
+# --- COMBINED CHART SECTION ---
 # Check if there is data to plot after filtering
 if not df_filtered.empty:
-    fig4 = px.histogram(
+    # --- Chart 1: Monthly Count ---
+    title_text = f"Movie Count by Month in {', '.join(map(str, sorted(year_options)))}"
+    fig_monthly = px.histogram(
         data_frame=df_filtered,
         x="Month",
-        color="Year",  # <-- This is the key change to create groups
-        barmode='group', # <-- This ensures bars are side-by-side
-        #text_auto=True,
+        color="Year",
+        barmode='group',
         category_orders={"Month": ["January", "February", "March", "April", "May", "June",
                                    "July", "August", "September", "October", "November", "December"]},
         color_discrete_sequence=px.colors.sequential.RdBu
-    # ).update_traces(
-    #  textfont=dict(font=dict(color='white', size=14),
-    #  textposition='outside'
-    ).update_layout(
+    )
+    fig_monthly.update_layout(
         title={
             'text': title_text,
             'y': 0.9,
@@ -174,77 +171,53 @@ if not df_filtered.empty:
             'yanchor': 'top'
         },
         yaxis_title="# of Movies",
-        font=dict(
-            size=20
-        )
-        # No need for showlegend=False, we want the legend now
+        font=dict(size=20)
     ).add_annotation(
         dict(font=dict(color='white', size=15),
-             x=0.7,
-             y=-0.25,
-             showarrow=False,
-             text=viz_tag,
-             textangle=0,
-             xanchor='left',
-             xref="paper",
-             yref="paper")
-             )
+             x=0.7, y=-0.25, showarrow=False, text=viz_tag,
+             textangle=0, xanchor='left', xref="paper", yref="paper")
+    )
 
-    # Don't forget to display the chart!
-    st.plotly_chart(fig4, use_container_width=True, key="monthly_count_chart")
-else:
-    st.warning("Please select at least one year to display the chart.")
-
-if not df_filtered.empty:
-
-    # 1. Data Preparation: Derive 'Day_of_Week' from the 'Date_Seen' column
+    # --- Chart 2: Weekly Count ---
     df_filtered['Day_of_Week'] = df_filtered['Date_Seen'].dt.day_name()
-
-    # 2. Define Order: Create a list for correct chronological sorting on the chart
     day_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-
-    # Create a title that includes the selected years
     dow_title_text = f"Movie Count by Day of the Week in {', '.join(map(str, sorted(year_options)))}"
-
-    # 3. Build the Chart: Create the figure first
     fig_day_of_week = px.histogram(
         data_frame=df_filtered,
         x="Day_of_Week",
         color="Year",
-        barmode="group",  # The stray ">" has been removed
+        barmode="group",
         category_orders={"Day_of_Week": day_order},
         color_discrete_sequence=px.colors.sequential.RdBu
     )
-
-    # 4. Update the layout and add annotations to the created figure
     fig_day_of_week.update_layout(
         title={
             'text': dow_title_text,
-            'y': 0.9,
-            'x': 0.5,
-            'xanchor': 'center',
-            'yanchor': 'top'
+            'y': 0.9, 'x': 0.5, 'xanchor': 'center', 'yanchor': 'top'
         },
         yaxis_title="# of Movies",
         xaxis_title="Day of the Week",
-        font=dict(
-            size=20
-        ),
-        showlegend=False
-    ).add_annotation(  # Note: add_annotation can be chained to update_layout
+        font=dict(size=20),
+        showlegend=False # Legend is redundant here
+    ).add_annotation(
         dict(font=dict(color='white', size=15),
-             x=0.7,
-             y=-0.2,
-             showarrow=False,
-             text=viz_tag,
-             textangle=0,
-             xanchor='left',
-             xref="paper",
-             yref="paper")
+             x=0.7, y=-0.2, showarrow=False, text=viz_tag,
+             textangle=0, xanchor='left', xref="paper", yref="paper")
     )
 
-    # Display the new chart in your Streamlit app with a unique key
-    st.plotly_chart(fig_day_of_week, use_container_width=True, key="day_of_week_chart")
+    # --- Display Charts in Columns ---
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.header("Monthly View")
+        st.plotly_chart(fig_monthly, use_container_width=True, key="monthly_count_chart")
+
+    with col2:
+        st.header("Weekly View")
+        st.plotly_chart(fig_day_of_week, use_container_width=True, key="day_of_week_chart")
+
+else:
+    st.warning("Please select at least one year to display the chart.")
 
 `,
     },
