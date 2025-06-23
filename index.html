@@ -60,11 +60,14 @@ df[["Release_Date", "Date_Seen"]] = df[["Release_Date", "Date_Seen"]].apply(pd.t
 year = list(df.Year.unique())
 year.sort(reverse=True)
 
-year_options = st.multiselect(
-  "What year(s) would you like to visualize?",
-  year,
-  default=[year[0]]
-)
+col1, col2 = st.columns([1, 3])
+
+with col1:
+  year_options = st.multiselect(
+    "What year(s) would you like to visualize?",
+    year,
+    default=[year[0]]
+  )
 
 year_option = year[0]
 
@@ -80,21 +83,21 @@ else:
 df = df[df.Year == year_option]
 
 # Movie Calculations
-time_spent_in_movies = df.Length.sum()
+time_spent_in_movies = df_filtered.Length.sum()
 hours_spent = round(time_spent_in_movies/60, 2)
 days_spent = round(hours_spent/24, 2)
-movie_count_total = df.shape[0]
+movie_count_total = df_filtered.shape[0]
 #st.write(movie_count_total)
-duplicates = len(set((df[df.duplicated(subset=['Movie'])].Movie.to_list())))
+duplicates = len(set((df_filtered[df_filtered.duplicated(subset=['Movie'])].Movie.to_list())))
 
+years_str = ", ".join(str(year) for year in sorted(year_options))
 
-
-st.title(f"Movies in {year_option}")
-st.write(f"In {year_option}, I've seen {movie_count_total} movies spending {time_spent_in_movies} minutes. That is {hours_spent} hours or {days_spent} days in a theater!")
+st.title(f"Movies in {years_str}")
+st.write(f"In the selected year(s), I've seen {movie_count_total} movies spending {time_spent_in_movies} minutes. That is {hours_spent} hours or {days_spent} days in a theater!")
 st.write(f"I've seen {duplicates} movies more than once!")
 
 # Group the DataFrame by 'title' and count the occurrences
-movie_counts = df.groupby('Movie').size().reset_index(name='Times Seen in a Theater')
+movie_counts = df_filtered.groupby('Movie').size().reset_index(name='Times Seen in a Theater')
 
 # Filter the results where count is greater than 1
 movie_count_df = movie_counts[movie_counts['Times Seen in a Theater'] > 1].sort_values(by="Times Seen in a Theater", ascending=False)
@@ -136,10 +139,13 @@ def static_table(
 if not movie_count_df.empty:
   static_table(movie_count_df, text_align="center")
 
-option = st.selectbox(
-  'Which tag would you like to add to the visualizations?',
-  ['Twitter', 'Facebook/LinkedIn', 'Bluesky']
-)
+col1, col2 = st.columns([1, 3])
+
+with col1:
+  option = st.selectbox(
+    'Which tag would you like to add to the visualizations?',
+    ['Twitter', 'Facebook/LinkedIn', 'Bluesky']
+  )
 
 if option == 'Twitter':
   viz_tag = 'Graphic: @danger009mouse'
