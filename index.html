@@ -166,7 +166,8 @@ if not df_filtered.empty:
         barmode='group',
         category_orders={"Month": ["January", "February", "March", "April", "May", "June",
                                    "July", "August", "September", "October", "November", "December"]},
-        color_discrete_sequence=px.colors.sequential.RdBu
+        color_discrete_sequence=px.colors.sequential.RdBu,
+        text_auto=True
     )
     fig_monthly.update_layout(
         title={
@@ -194,7 +195,8 @@ if not df_filtered.empty:
         color="Year",
         barmode="group",
         category_orders={"Day_of_Week": day_order},
-        color_discrete_sequence=px.colors.sequential.RdBu
+        color_discrete_sequence=px.colors.sequential.RdBu,
+        text_auto=True
     )
     fig_day_of_week.update_layout(
         title={
