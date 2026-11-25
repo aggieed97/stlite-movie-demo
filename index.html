@@ -1,449 +1,639 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, shrink-to-fit=no"
-    />
-    <title>Ed's Movies</title>
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.76.0/build/style.css"
-    />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module">
-      import { mount } from "https://cdn.jsdelivr.net/npm/@stlite/browser@0.76.0/build/stlite.js";
-      mount(
-      {
-    requirements: ["plotly.express", "pandas", "requests"], // Packages to install
-    entrypoint: "streamlit_app.py", // The target file of the `streamlit run` command
-    files: {
-      "streamlit_app.py": `
-import streamlit as st
-import pandas as pd
-import plotly.express as px
-import importlib
-import requests
-from io import StringIO
-from typing import Literal
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ed's Movies</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <style>
+    :root {
+      --bg: #0e1117;
+      --surface: #1a1d24;
+      --border: rgba(150, 150, 150, 0.25);
+      --text: #fafafa;
+      --muted: #a3a8b8;
+      --accent: #4393c3;
+    }
 
-if importlib.util.find_spec("pyodide") is not None:
-    from pyodide.http import open_url
+    * { box-sizing: border-box; }
 
-@st.cache_data(show_spinner=False)
-def read_url(url:str, **kwargs):
-    """Read the CSV content from a URL"""
+    body {
+      margin: 0;
+      padding: 2rem clamp(1rem, 3vw, 3rem);
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.5;
+    }
 
-    # If pyodide is available
-    if importlib.util.find_spec("pyodide") is not None:
-        url_contents = open_url(url)
-    else:
-        r = requests.get(url)
-        url_contents = StringIO(r.text)
+    h1 { margin: 0 0 0.75rem; font-size: 2.25rem; }
+    h2 { margin: 2.5rem 0 1rem; font-size: 1.6rem; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }
+    h3 { margin: 0 0 0.5rem; font-size: 1.15rem; color: var(--muted); }
 
-    return pd.read_csv(
-        url_contents,
-        **kwargs
-    )
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      align-items: flex-end;
+      background: var(--surface);
+      padding: 1rem 1.25rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      margin-bottom: 1.75rem;
+    }
 
-st.set_page_config(page_title="Ed's Movies", layout="wide")
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
 
-url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkpF4DO8orXrx94k9Hl9q8kF-lQbKXENLQL0xAoo_ap9OOUl0utwd7MeJn-0aGJBzQ--xdKVSvxe5z/pub?gid=505644229&single=true&output=csv"
+    .control-group label {
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
 
-df = read_url(url)
-df[["Release_Date", "Date_Seen"]] = df[["Release_Date", "Date_Seen"]].apply(pd.to_datetime, errors="coerce", format="mixed")
+    .year-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+    }
 
-year = list(df.Year.unique())
-year.sort(reverse=True)
+    .year-pill {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
 
-col1, col2 = st.columns([1, 3])
+    .year-pill.active {
+      background: #b2182b;
+      border-color: #d6604d;
+      font-weight: 600;
+    }
 
-with col1:
-  year_options = st.multiselect(
-    "What year(s) would you like to visualize?",
-    year,
-    default=[year[0]]
-  )
+    .year-pill.toggle-all {
+      border-color: var(--accent);
+      color: #92c5de;
+    }
 
-year_option = year[0]
+    .year-pill.toggle-all.active {
+      background: #2166ac;
+      border-color: var(--accent);
+      color: var(--text);
+    }
 
-# Also, add a check to make sure at least one year is selected
-if year_options:
-    df_filtered = df[df.Year.isin(year_options)].copy()
-    # It's good practice to sort by year and month for chronological plotting
-    df_filtered.sort_values(by=['Year', 'Month'], inplace=True)
-else:
-    # If no years are selected, create an empty dataframe to avoid errors
-    df_filtered = pd.DataFrame()
+    select {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.45rem 0.75rem;
+      font-size: 0.9rem;
+    }
 
-df = df[df.Year == year_option]
+    .stats p {
+      margin: 0.35rem 0;
+      font-size: 1.05rem;
+    }
 
-# Movie Calculations
-time_spent_in_movies = df_filtered.Length.sum()
-hours_spent = round(time_spent_in_movies/60, 2)
-days_spent = round(hours_spent/24, 2)
-movie_count_total = df_filtered.shape[0]
-#st.write(movie_count_total)
-duplicates = len(set((df_filtered[df_filtered.duplicated(subset=['Movie'])].Movie.to_list())))
+    .rewatch-table {
+      width: min(100%, 550px);
+      border-collapse: collapse;
+      margin: 1rem 0 1.5rem;
+    }
 
-years_str = ", ".join(str(year) for year in sorted(year_options))
+    .rewatch-table th,
+    .rewatch-table td {
+      border: 1px solid var(--border);
+      padding: 0.4rem 0.65rem;
+      text-align: center;
+    }
 
-st.title(f"Movies in {years_str}")
-st.write(f"In the selected year(s), I've seen {movie_count_total} movies spending {time_spent_in_movies} minutes. That is {hours_spent} hours or {days_spent} days in a theater!")
-st.write(f"I've seen {duplicates} movies more than once!")
+    .rewatch-table th {
+      background: var(--surface);
+    }
 
-# Group the DataFrame by 'title' and count the occurrences
-movie_counts = df_filtered.groupby('Movie').size().reset_index(name='Times Seen in a Theater')
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.5rem;
+    }
 
-# Filter the results where count is greater than 1
-movie_count_df = movie_counts[movie_counts['Times Seen in a Theater'] > 1].sort_values(by="Times Seen in a Theater", ascending=False)
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem;
+    }
 
-def static_table(
-    df: pd.DataFrame,
-    text_align: Literal["left", "center", "right"] = "center",
-    line_color: str = "rgba(150, 150, 150, 0.3)",
-) -> None:
-    common_props = [
-        ("text-align", text_align),
-        ("border", f"1px solid {line_color}"),
-        ("padding", "0.25rem 0.375rem"),
-        ("vertical-align", "middle"),
-        ("line-height", "1.5rem"),
-    ]
+    .chart-box {
+      width: 100%;
+      height: 460px;
+    }
 
-    st.html(
-        df.style.hide(axis="index")
-        .format(precision=4)
-        .set_table_styles(
-            [
-                {  # Header
-                    "selector": "th",
-                    "props": common_props,
-                },
-                {  # Data
-                    "selector": "td",
-                    "props": common_props,
-                },
-            ]
+    .status-msg {
+      padding: 1rem 1.25rem;
+      background: rgba(214, 96, 77, 0.15);
+      border: 1px solid #d6604d;
+      border-radius: 8px;
+      margin: 1rem 0;
+    }
+
+    @media (max-width: 960px) {
+      .grid-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div id="loading" class="status-msg">Loading movie data from Google Sheets...</div>
+
+  <div id="app" style="display: none;">
+    <div class="controls">
+      <div class="control-group">
+        <label>What year(s) would you like to visualize?</label>
+        <div id="year-pills" class="year-pills"></div>
+      </div>
+
+      <div class="control-group">
+        <label for="tag-select">Which tag would you like to add to the visualizations?</label>
+        <select id="tag-select">
+          <option value="Graphic: @danger009mouse">Twitter</option>
+          <option value="Graphic: Ed Salinas">Facebook/LinkedIn</option>
+          <option value="Graphic: dangermouse">Bluesky</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="empty-warning" class="status-msg" style="display: none;">
+      Please select at least one year to display the dashboard.
+    </div>
+
+    <div id="dashboard-content">
+      <h1 id="page-title"></h1>
+      <div class="stats">
+        <p id="stat-summary"></p>
+        <p id="stat-duplicates"></p>
+      </div>
+      <div id="rewatch-container"></div>
+
+      <div class="grid-2" style="margin-top: 1.5rem;">
+        <div class="chart-card">
+          <h3>Monthly View</h3>
+          <div id="chart-monthly" class="chart-box"></div>
+        </div>
+        <div class="chart-card">
+          <h3>Weekly View</h3>
+          <div id="chart-weekly" class="chart-box"></div>
+        </div>
+      </div>
+
+      <h2>Content and Location Breakdowns</h2>
+      <div class="grid-2">
+        <div class="chart-card">
+          <h3>By Genre</h3>
+          <div id="chart-genre" class="chart-box"></div>
+        </div>
+        <div class="chart-card">
+          <h3>By Theater Chain</h3>
+          <div id="chart-theater" class="chart-box"></div>
+        </div>
+      </div>
+
+      <h2>Release Type and Distributor Analysis</h2>
+      <div class="grid-2">
+        <div class="chart-card">
+          <h3>By Release Type</h3>
+          <div id="chart-release" class="chart-box"></div>
+        </div>
+        <div class="chart-card">
+          <h3>By Distributor</h3>
+          <div id="chart-distributor" class="chart-box"></div>
+        </div>
+      </div>
+
+      <h2>Genre Deep Dives</h2>
+      <div class="grid-2">
+        <div class="chart-card">
+          <h3>Genre Affinity by Top Theaters</h3>
+          <div id="chart-heatmap" class="chart-box"></div>
+        </div>
+        <div class="chart-card">
+          <h3>Distribution of Runtimes by Genre of Movies Watched</h3>
+          <div id="chart-boxplot" class="chart-box"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const CSV_URL =
+      "https://docs.google.com/spreadsheets/d/e/2PACX-1vQkpF4DO8orXrx94k9Hl9q8kF-lQbKXENLQL0xAoo_ap9OOUl0utwd7MeJn-0aGJBzQ--xdKVSvxe5z/pub?gid=505644229&single=true&output=csv";
+
+    // Exact Plotly px.colors.sequential.RdBu palette
+    const RDBU_PALETTE = [
+      "rgb(103,0,31)", "rgb(178,24,43)", "rgb(214,96,77)",
+      "rgb(244,165,130)", "rgb(253,219,199)", "rgb(247,247,247)",
+      "rgb(209,229,240)", "rgb(146,197,222)", "rgb(67,147,195)",
+      "rgb(33,102,172)", "rgb(5,48,97)"
+    ];
+
+    const RDBU_COLORSCALE = RDBU_PALETTE.map((c, i) => [
+      i / (RDBU_PALETTE.length - 1),
+      c
+    ]);
+
+    // Exact Plotly px.colors.sequential.Sunsetdark palette (for Runtime Box Plot)
+    const SUNSETDARK_PALETTE = [
+      "rgb(252,222,156)", "rgb(250,164,118)", "rgb(240,116,110)",
+      "rgb(227,79,111)", "rgb(220,57,119)", "rgb(185,37,122)",
+      "rgb(124,29,111)"
+    ];
+
+    const MONTHS = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
+    const DAYS = [
+      "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+    ];
+    const TOP_CHAINS = ["Alamo Drafthouse", "AMC", "Cinemark", "Regal Cinemas"];
+    const PLOT_CONFIG = { responsive: true, displaylogo: false };
+
+    let allRows = [];
+    let availableYears = [];
+    let selectedYears = new Set();
+
+    // Parse dates in local time to prevent UTC off-by-one weekday shifts
+    function parseDateSafe(val) {
+      if (!val) return null;
+      const s = String(val).trim();
+      let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+      if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+      m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+      if (m) {
+        let yr = Number(m[3]);
+        if (yr < 100) yr += 2000;
+        return new Date(yr, Number(m[1]) - 1, Number(m[2]));
+      }
+      const d = new Date(s);
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    function getDayName(dateObj) {
+      if (!dateObj) return null;
+      const jsDays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      return jsDays[dateObj.getDay()];
+    }
+
+    function countBy(rows, key) {
+      const map = new Map();
+      for (const r of rows) {
+        const val = r[key];
+        if (val !== null && val !== undefined && String(val).trim() !== "") {
+          const k = String(val).trim();
+          map.set(k, (map.get(k) || 0) + 1);
+        }
+      }
+      return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
+    }
+
+    function median(arr) {
+      if (!arr.length) return 0;
+      const sorted = [...arr].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+    }
+
+    function makeTagAnnotation(text, x = 1.0, y = -0.12, xanchor = "right") {
+      return [{
+        font: { color: "white", size: 13 },
+        x, y,
+        showarrow: false,
+        text,
+        xanchor,
+        xref: "paper",
+        yref: "paper"
+      }];
+    }
+
+    function renderTreemap(divId, entries, rootLabel, titleText, vizTag) {
+      const total = entries.reduce((sum, [, count]) => sum + count, 0);
+      const trace = {
+        type: "treemap",
+        ids: ["__root__", ...entries.map(([k]) => k)],
+        labels: [rootLabel, ...entries.map(([k]) => k)],
+        parents: ["", ...entries.map(() => "__root__")],
+        values: [total, ...entries.map(([, v]) => v)],
+        branchvalues: "total",
+        textinfo: "label+value+percent root",
+        marker: {
+          colors: ["#262730", ...entries.map((_, i) => RDBU_PALETTE[i % RDBU_PALETTE.length])]
+        }
+      };
+
+      const layout = {
+        title: { text: titleText, x: 0.5, xanchor: "center" },
+        font: { size: 14, color: "white" },
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        margin: { t: 55, l: 10, r: 10, b: 50 },
+        annotations: makeTagAnnotation(vizTag, 1.0, -0.1, "right")
+      };
+
+      Plotly.newPlot(divId, [trace], layout, PLOT_CONFIG);
+    }
+
+    function renderDashboard() {
+      const yearsSorted = Array.from(selectedYears).sort((a, b) => a - b);
+      const vizTag = document.getElementById("tag-select").value;
+      const warningEl = document.getElementById("empty-warning");
+      const contentEl = document.getElementById("dashboard-content");
+
+      if (yearsSorted.length === 0) {
+        warningEl.style.display = "block";
+        contentEl.style.display = "none";
+        return;
+      }
+
+      warningEl.style.display = "none";
+      contentEl.style.display = "block";
+
+      const df = allRows.filter(r => selectedYears.has(r.Year));
+      const yearsStr = yearsSorted.join(", ");
+
+      // --- Summary Stats ---
+      const totalMinutes = df.reduce((sum, r) => sum + (Number(r.Length) || 0), 0);
+      const hoursSpent = (totalMinutes / 60).toFixed(2);
+      const daysSpent = (totalMinutes / 60 / 24).toFixed(2);
+      const movieCounts = countBy(df, "Movie");
+      const rewatches = movieCounts.filter(([, count]) => count > 1);
+
+      document.getElementById("page-title").textContent = `Movies in ${yearsStr}`;
+      document.getElementById("stat-summary").textContent =
+        `In the selected year(s), I've seen ${df.length} movies spending ${totalMinutes} minutes. That is ${hoursSpent} hours or ${daysSpent} days in a theater!`;
+      document.getElementById("stat-duplicates").textContent =
+        `I've seen ${rewatches.length} movies more than once!`;
+
+      // --- Rewatch Table ---
+      const rewatchContainer = document.getElementById("rewatch-container");
+      if (rewatches.length > 0) {
+        const rowsHtml = rewatches
+          .map(([movie, count]) => `<tr><td>${movie}</td><td>${count}</td></tr>`)
+          .join("");
+        rewatchContainer.innerHTML = `
+          <table class="rewatch-table">
+            <thead><tr><th>Movie</th><th>Times Seen in a Theater</th></tr></thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>`;
+      } else {
+        rewatchContainer.innerHTML = "";
+      }
+
+      // --- Chart 1: Monthly Count ---
+      const monthlyTraces = yearsSorted.map((yr, idx) => {
+        const yrRows = df.filter(r => r.Year === yr);
+        const counts = MONTHS.map(m => yrRows.filter(r => r.Month === m).length);
+        return {
+          type: "bar",
+          name: String(yr),
+          x: MONTHS,
+          y: counts,
+          text: counts.map(c => (c > 0 ? String(c) : "")),
+          textposition: "auto",
+          marker: { color: RDBU_PALETTE[idx % RDBU_PALETTE.length] }
+        };
+      });
+
+      Plotly.newPlot("chart-monthly", monthlyTraces, {
+        title: { text: `Movie Count by Month in ${yearsStr}`, x: 0.5, xanchor: "center" },
+        barmode: "group",
+        yaxis: { title: "# of Movies", gridcolor: "rgba(255,255,255,0.1)" },
+        xaxis: { tickangle: -35 },
+        font: { size: 14, color: "white" },
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        margin: { t: 60, l: 55, r: 20, b: 95 },
+        annotations: makeTagAnnotation(vizTag, 1.0, -0.24, "right")
+      }, PLOT_CONFIG);
+
+      // --- Chart 2: Day of Week Count ---
+      const weeklyTraces = yearsSorted.map((yr, idx) => {
+        const yrRows = df.filter(r => r.Year === yr);
+        const counts = DAYS.map(d => yrRows.filter(r => r.Day_of_Week === d).length);
+        return {
+          type: "bar",
+          name: String(yr),
+          x: DAYS,
+          y: counts,
+          text: counts.map(c => (c > 0 ? String(c) : "")),
+          textposition: "auto",
+          marker: { color: RDBU_PALETTE[idx % RDBU_PALETTE.length] }
+        };
+      });
+
+      Plotly.newPlot("chart-weekly", weeklyTraces, {
+        title: { text: `Movie Count by Day of the Week in ${yearsStr}`, x: 0.5, xanchor: "center" },
+        barmode: "group",
+        showlegend: false,
+        yaxis: { title: "# of Movies", gridcolor: "rgba(255,255,255,0.1)" },
+        xaxis: { title: "Day of the Week", tickangle: -25 },
+        font: { size: 14, color: "white" },
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        margin: { t: 60, l: 55, r: 20, b: 95 },
+        annotations: makeTagAnnotation(vizTag, 1.0, -0.24, "right")
+      }, PLOT_CONFIG);
+
+      // --- Chart 3: Genre Treemap (RdBu) ---
+      renderTreemap(
+        "chart-genre",
+        countBy(df, "Genre"),
+        "All Genres",
+        `Genre Breakdown in ${yearsStr}`,
+        vizTag
+      );
+
+      // --- Chart 4: Theater Chain Treemap (Matched to RdBu) ---
+      renderTreemap(
+        "chart-theater",
+        countBy(df, "Theater_Chain"),
+        "All Theaters",
+        `Theater Chain Breakdown in ${yearsStr}`,
+        vizTag
+      );
+
+      // --- Chart 5: Release Type Donut (RdBu) ---
+      const releaseCounts = countBy(df, "New_or_Re-Release");
+      Plotly.newPlot("chart-release", [{
+        type: "pie",
+        labels: releaseCounts.map(([k]) => k),
+        values: releaseCounts.map(([, v]) => v),
+        hole: 0.4,
+        textinfo: "percent+label",
+        textfont: { size: 15 },
+        marker: {
+          colors: releaseCounts.map((_, i) => RDBU_PALETTE[i % RDBU_PALETTE.length])
+        }
+      }], {
+        title: { text: `New vs. Re-Release in ${yearsStr}`, x: 0.5, xanchor: "center" },
+        font: { size: 14, color: "white" },
+        showlegend: false,
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        margin: { t: 55, l: 15, r: 15, b: 50 },
+        annotations: makeTagAnnotation(vizTag, 1.0, -0.1, "right")
+      }, PLOT_CONFIG);
+
+      // --- Chart 6: Distributor Treemap (Matched to RdBu) ---
+      renderTreemap(
+        "chart-distributor",
+        countBy(df, "Distributor"),
+        "All Distributors",
+        `Distributor Breakdown in ${yearsStr}`,
+        vizTag
+      );
+
+      // --- Chart 7: Genre Affinity Heatmap (RdBu) ---
+      const heatRows = df.filter(r => TOP_CHAINS.includes(r.Theater_Chain));
+      const heatGenres = Array.from(new Set(heatRows.map(r => r.Genre).filter(Boolean))).sort();
+      const heatChains = TOP_CHAINS.filter(c => heatRows.some(r => r.Theater_Chain === c));
+
+      const zMatrix = heatChains.map(chain =>
+        heatGenres.map(genre =>
+          heatRows.filter(r => r.Theater_Chain === chain && r.Genre === genre).length
         )
-        .to_html(table_attributes='style="width: 50%;"')
-    )
+      );
 
+      Plotly.newPlot("chart-heatmap", [{
+        type: "heatmap",
+        x: heatGenres,
+        y: heatChains,
+        z: zMatrix,
+        text: zMatrix.map(row => row.map(v => (v > 0 ? String(v) : ""))),
+        texttemplate: "%{text}",
+        colorscale: RDBU_COLORSCALE,
+        colorbar: { title: "Count" }
+      }], {
+        title: { text: `Genre Affinity in ${yearsStr}`, x: 0.5, xanchor: "center" },
+        xaxis: { title: "Genre", tickangle: -45 },
+        yaxis: { title: "Theater Chain" },
+        font: { size: 13, color: "white" },
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        margin: { t: 55, l: 125, r: 20, b: 115 },
+        annotations: makeTagAnnotation(vizTag, 1.0, -0.32, "right")
+      }, PLOT_CONFIG);
 
+      // --- Chart 8: Runtime Box Plot (Sorted by Median Descending) ---
+      const genreLengths = new Map();
+      for (const r of df) {
+        const len = Number(r.Length);
+        if (r.Genre && !isNaN(len) && len > 0) {
+          if (!genreLengths.has(r.Genre)) genreLengths.set(r.Genre, []);
+          genreLengths.get(r.Genre).push(len);
+        }
+      }
 
-# Display the styled DataFrame in Streamlit
-if not movie_count_df.empty:
-  static_table(movie_count_df, text_align="center")
+      const sortedGenres = Array.from(genreLengths.entries())
+        .sort((a, b) => median(b[1]) - median(a[1]));
 
-col1, col2 = st.columns([1, 3])
+      const boxTraces = sortedGenres.map(([genre, lengths], idx) => ({
+        type: "box",
+        name: genre,
+        y: lengths,
+        marker: { color: SUNSETDARK_PALETTE[idx % SUNSETDARK_PALETTE.length] }
+      }));
 
-with col1:
-  option = st.selectbox(
-    'Which tag would you like to add to the visualizations?',
-    ['Twitter', 'Facebook/LinkedIn', 'Bluesky']
-  )
+      Plotly.newPlot("chart-boxplot", boxTraces, {
+        title: { text: `Runtime Distribution in ${yearsStr}`, x: 0.5, xanchor: "center" },
+        xaxis: { title: "Genre", tickangle: -45 },
+        yaxis: { title: "Runtime (Minutes)", gridcolor: "rgba(255,255,255,0.1)" },
+        font: { size: 13, color: "white" },
+        showlegend: false,
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        margin: { t: 55, l: 60, r: 20, b: 115 },
+        annotations: makeTagAnnotation(vizTag, 1.0, -0.32, "right")
+      }, PLOT_CONFIG);
+    }
 
-if option == 'Twitter':
-  viz_tag = 'Graphic: @danger009mouse'
-elif option == 'Facebook/LinkedIn':
-  viz_tag = 'Graphic: Ed Salinas'
-else:
-  viz_tag = 'Graphic: dangermouse'
+    function buildYearPills() {
+      const container = document.getElementById("year-pills");
+      container.innerHTML = "";
 
-# --- COMBINED CHART SECTION ---
-# Check if there is data to plot after filtering
-if not df_filtered.empty:
-    # --- Chart 1: Monthly Count ---
-    title_text = f"Movie Count by Month in {', '.join(map(str, sorted(year_options)))}"
-    fig_monthly = px.histogram(
-        data_frame=df_filtered,
-        x="Month",
-        color="Year",
-        barmode='group',
-        category_orders={"Month": ["January", "February", "March", "April", "May", "June",
-                                   "July", "August", "September", "October", "November", "December"]},
-        color_discrete_sequence=px.colors.sequential.RdBu,
-        text_auto=True
-    )
-    fig_monthly.update_layout(
-        title={
-            'text': title_text,
-            'y': 0.9,
-            'x': 0.5,
-            'xanchor': 'center',
-            'yanchor': 'top'
-        },
-        yaxis_title="# of Movies",
-        font=dict(size=20)
-    ).add_annotation(
-        dict(font=dict(color='white', size=15),
-             x=0.7, y=-0.25, showarrow=False, text=viz_tag,
-             textangle=0, xanchor='left', xref="paper", yref="paper")
-    )
+      const allSelected =
+        availableYears.length > 0 && selectedYears.size === availableYears.length;
 
-    # --- Chart 2: Weekly Count ---
-    df_filtered['Day_of_Week'] = df_filtered['Date_Seen'].dt.day_name()
-    day_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-    dow_title_text = f"Movie Count by Day of the Week in {', '.join(map(str, sorted(year_options)))}"
-    fig_day_of_week = px.histogram(
-        data_frame=df_filtered,
-        x="Day_of_Week",
-        color="Year",
-        barmode="group",
-        category_orders={"Day_of_Week": day_order},
-        color_discrete_sequence=px.colors.sequential.RdBu,
-        text_auto=True
-    )
-    fig_day_of_week.update_layout(
-        title={
-            'text': dow_title_text,
-            'y': 0.9, 'x': 0.5, 'xanchor': 'center', 'yanchor': 'top'
-        },
-        yaxis_title="# of Movies",
-        xaxis_title="Day of the Week",
-        font=dict(size=20),
-        showlegend=False # Legend is redundant here
-    ).add_annotation(
-        dict(font=dict(color='white', size=15),
-             x=0.7, y=-0.2, showarrow=False, text=viz_tag,
-             textangle=0, xanchor='left', xref="paper", yref="paper")
-    )
+      const toggleBtn = document.createElement("button");
+      toggleBtn.type = "button";
+      toggleBtn.className = "year-pill toggle-all" + (allSelected ? " active" : "");
+      toggleBtn.textContent = allSelected ? "Clear All" : "Select All";
+      toggleBtn.addEventListener("click", () => {
+        if (allSelected) {
+          selectedYears.clear();
+        } else {
+          availableYears.forEach(yr => selectedYears.add(yr));
+        }
+        buildYearPills();
+        renderDashboard();
+      });
+      container.appendChild(toggleBtn);
 
-    # --- Display Charts in Columns ---
-    col1, col2 = st.columns(2)
+      for (const yr of availableYears) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "year-pill" + (selectedYears.has(yr) ? " active" : "");
+        btn.textContent = yr;
+        btn.addEventListener("click", () => {
+          if (selectedYears.has(yr)) selectedYears.delete(yr);
+          else selectedYears.add(yr);
+          buildYearPills();
+          renderDashboard();
+        });
+        container.appendChild(btn);
+      }
+    }
 
-    with col1:
-        st.header("Monthly View")
-        st.plotly_chart(fig_monthly, use_container_width=True, key="monthly_count_chart")
+    // Load CSV on startup
+    Papa.parse(CSV_URL, {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        allRows = results.data.map(row => {
+          const parsedDate = parseDateSafe(row.Date_Seen);
+          return {
+            ...row,
+            Year: Number(row.Year),
+            Length: Number(row.Length),
+            Day_of_Week: getDayName(parsedDate)
+          };
+        }).filter(r => !isNaN(r.Year));
 
-    with col2:
-        st.header("Weekly View")
-        st.plotly_chart(fig_day_of_week, use_container_width=True, key="day_of_week_chart")
+        availableYears = Array.from(new Set(allRows.map(r => r.Year))).sort((a, b) => b - a);
+        if (availableYears.length > 0) {
+          selectedYears.add(availableYears[0]);
+        }
 
-else:
-    st.warning("Please select at least one year to display the chart.")
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("app").style.display = "block";
+        document.getElementById("tag-select").addEventListener("change", renderDashboard);
 
-st.header("Content and Location Breakdowns")
-
-# Check if there is data to plot after filtering
-if not df_filtered.empty:
-    # --- 1. Prepare Data for BOTH Treemaps First ---
-
-    # Data for Genre Treemap
-    genre_counts = df_filtered['Genre'].value_counts().reset_index()
-    genre_counts.columns = ['Genre', 'Count']
-
-    # Data for Theater Chain Treemap
-    theater_counts = df_filtered['Theater_Chain'].value_counts().reset_index()
-    theater_counts.columns = ['Theater_Chain', 'Count']
-
-    # --- 2. Create Two Columns for the Layout ---
-    col1, col2 = st.columns(2)
-
-
-    # --- 3. Build and Display the First Treemap in Column 1 ---
-    with col1:
-        st.subheader("By Genre")
-        genre_title = f"Genre Breakdown in {', '.join(map(str, sorted(year_options)))}"
-
-        fig_genre_treemap = px.treemap(
-            genre_counts,
-            path=[px.Constant("All Genres"), 'Genre'],
-            values='Count',
-            color='Genre',
-            color_discrete_sequence=px.colors.sequential.RdBu
-        )
-        fig_genre_treemap.update_traces(textinfo="label+value+percent root")
-        fig_genre_treemap.update_layout(
-            title={'text': genre_title, 'y':0.9, 'x':0.5, 'xanchor': 'center', 'yanchor': 'top'},
-            font=dict(size=16, color="white"),
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)'
-        ).add_annotation(
-            dict(font=dict(color='white', size=15), x=1.0, y=-0.1, showarrow=False,
-                 text=viz_tag, textangle=0, xanchor='right', xref="paper", yref="paper")
-        )
-        st.plotly_chart(fig_genre_treemap, use_container_width=True, key="genre_treemap")
-
-    # --- 4. Build and Display the Second Treemap in Column 2 ---
-    with col2:
-        st.subheader("By Theater Chain")
-        theater_title = f"Theater Chain Breakdown in {', '.join(map(str, sorted(year_options)))}"
-
-        fig_theater_treemap = px.treemap(
-            theater_counts,
-            path=[px.Constant("All Theaters"), 'Theater_Chain'],
-            values='Count',
-            color='Theater_Chain',
-            color_discrete_sequence=px.colors.sequential.thermal
-        )
-        fig_theater_treemap.update_traces(textinfo="label+value+percent root")
-        fig_theater_treemap.update_layout(
-            title={'text': theater_title, 'y':0.9, 'x':0.5, 'xanchor': 'center', 'yanchor': 'top'},
-            font=dict(size=16, color="white"),
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)'
-        ).add_annotation(
-            dict(font=dict(color='white', size=15), x=1.0, y=-0.1, showarrow=False,
-                 text=viz_tag, textangle=0, xanchor='right', xref="paper", yref="paper")
-        )
-        st.plotly_chart(fig_theater_treemap, use_container_width=True, key="theater_treemap")
-
-else:
-    st.warning("Please select at least one year to display visualizations.")
-
-st.header("Release Type and Distributor Analysis")
-
-# Check if there is data to plot after filtering
-if not df_filtered.empty:
-    # --- 1. Prepare Data for BOTH Charts ---
-
-    # Data for New vs. Re-Release Donut Chart
-    release_counts = df_filtered['New_or_Re-Release'].value_counts().reset_index()
-    release_counts.columns = ['Category', 'Count']
-
-    # Data for Distributor Treemap
-    distributor_counts = df_filtered['Distributor'].value_counts().reset_index()
-    distributor_counts.columns = ['Distributor', 'Count']
-
-    # --- 2. Create Two Columns for the Layout ---
-    col1, col2 = st.columns(2)
-
-
-    # --- 3. Build and Display the Donut Chart in Column 1 ---
-    with col1:
-        st.subheader("By Release Type")
-        donut_title = f"New vs. Re-Release in {', '.join(map(str, sorted(year_options)))}"
-
-        # Use px.pie and the 'hole' parameter to create a donut chart
-        fig_donut = px.pie(
-            release_counts,
-            names='Category',
-            values='Count',
-            hole=0.4, # This creates the donut shape
-            color_discrete_sequence=px.colors.sequential.RdBu
-        )
-        fig_donut.update_traces(textinfo='percent+label', textfont_size=16)
-        fig_donut.update_layout(
-            title={'text': donut_title, 'y':0.9, 'x':0.5, 'xanchor': 'center', 'yanchor': 'top'},
-            font=dict(size=16, color="white"),
-            showlegend=False, # Hide legend as labels are on the chart
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)'
-        ).add_annotation(
-            dict(font=dict(color='white', size=15), x=1.0, y=-0.1, showarrow=False,
-                 text=viz_tag, textangle=0, xanchor='right', xref="paper", yref="paper")
-        )
-        st.plotly_chart(fig_donut, use_container_width=True, key="release_donut")
-
-    # --- 4. Build and Display the Distributor Treemap in Column 2 ---
-    with col2:
-        st.subheader("By Distributor")
-        dist_title = f"Distributor Breakdown in {', '.join(map(str, sorted(year_options)))}"
-
-        fig_dist_treemap = px.treemap(
-            distributor_counts,
-            path=[px.Constant("All Distributors"), 'Distributor'],
-            values='Count',
-            color='Distributor',
-            color_discrete_sequence=px.colors.sequential.Sunsetdark
-        )
-        fig_dist_treemap.update_traces(textinfo="label+value+percent root")
-        fig_dist_treemap.update_layout(
-            title={'text': dist_title, 'y':0.9, 'x':0.5, 'xanchor': 'center', 'yanchor': 'top'},
-            font=dict(size=16, color="white"),
-            paper_bgcolor='rgba(0,0,0,0)',
-            plot_bgcolor='rgba(0,0,0,0)'
-        ).add_annotation(
-            dict(font=dict(color='white', size=15), x=1.0, y=-0.1, showarrow=False,
-                 text=viz_tag, textangle=0, xanchor='right', xref="paper", yref="paper")
-        )
-        st.plotly_chart(fig_dist_treemap, use_container_width=True, key="distributor_treemap")
-
-else:
-    st.warning("Please select at least one year to display visualizations.")
-
-st.header("Genre Deep Dives")
-
-# Check if there is data to plot after filtering
-if not df_filtered.empty:
-    # --- 1. Create Two Columns for the Layout ---
-    col1, col2 = st.columns(2)
-
-    # --- 2. Build and Display the Heatmap in Column 1 ---
-    with col1:
-        st.subheader("Genre Affinity by Top Theaters")
-        # --- Data Prep for Heatmap ---
-        chains_to_include = ['Alamo Drafthouse', 'AMC', 'Cinemark', 'Regal Cinemas']
-        heatmap_df = df_filtered[df_filtered['Theater_Chain'].isin(chains_to_include)]
-        affinity_counts = heatmap_df.groupby(['Genre', 'Theater_Chain']).size().reset_index(name='Count')
-        heatmap_title = f"Genre Affinity in {', '.join(map(str, sorted(year_options)))}"
-
-        # --- Create Heatmap ---
-        fig_heatmap = px.density_heatmap(
-            affinity_counts, x='Genre', y='Theater_Chain', z='Count',
-            color_continuous_scale='RdBu', text_auto=True
-        )
-        # --- Style Heatmap ---
-        fig_heatmap.update_xaxes(tickangle=-45)
-        fig_heatmap.update_layout(
-            title={'text': heatmap_title, 'y': 0.95, 'x': 0.5, 'xanchor': 'center', 'yanchor': 'top'},
-            font=dict(size=14, color="white"),
-            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            xaxis_title="Genre", yaxis_title="Theater Chain",
-            coloraxis_colorbar_title_text='Count'
-        ).add_annotation(
-            dict(font=dict(color='white', size=15), x=1.0, y=-0.3, showarrow=False,
-                 text=viz_tag, textangle=0, xanchor='right', xref="paper", yref="paper")
-        )
-        st.plotly_chart(fig_heatmap, use_container_width=True, key="affinity_heatmap_filtered")
-
-
-    # --- 3. Build and Display the Box Plot in Column 2 ---
-    with col2:
-        st.subheader("Distribution of Runtimes by Genre of Movies Watched")
-        # --- Data Prep for Box Plot (to order genres by median runtime) ---
-        genre_order_by_length = df_filtered.groupby('Genre')['Length'].median().sort_values(ascending=False).index
-        boxplot_title = f"Runtime Distribution in {', '.join(map(str, sorted(year_options)))}"
-
-        # --- Create Box Plot ---
-        fig_box = px.box(
-            df_filtered,
-            x='Genre',
-            y='Length',
-            color='Genre', # Optional: adds color to each box
-            category_orders={'Genre': genre_order_by_length}, # This sorts the x-axis
-            color_discrete_sequence=px.colors.sequential.Sunsetdark
-        )
-        # --- Style Box Plot ---
-        fig_box.update_xaxes(tickangle=-45)
-        fig_box.update_layout(
-            title={'text': boxplot_title, 'y': 0.95, 'x': 0.5, 'xanchor': 'center', 'yanchor': 'top'},
-            font=dict(size=14, color="white"),
-            paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-            xaxis_title="Genre", yaxis_title="Runtime (Minutes)",
-            showlegend=False # Hide legend since x-axis and colors are redundant
-        ).add_annotation(
-            dict(font=dict(color='white', size=15), x=1.0, y=-0.3, showarrow=False,
-                 text=viz_tag, textangle=0, xanchor='right', xref="paper", yref="paper")
-        )
-        st.plotly_chart(fig_box, use_container_width=True, key="runtime_boxplot")
-
-else:
-    st.warning("Please select at least one year to display visualizations.")
-`,
-    },
-    streamlitConfig: {
-      // Streamlit configuration
-      "client.toolbarMode": "viewer",
-    },
-  },
-  document.getElementById("root")
-);
-    </script>
-  </body>
+        buildYearPills();
+        renderDashboard();
+      },
+      error: (err) => {
+        document.getElementById("loading").textContent =
+          "Failed to load Google Sheet CSV: " + err.message;
+      }
+    });
+  </script>
+</body>
 </html>
